@@ -37,7 +37,7 @@ def from_wireshark_style_escape(c_string: str) -> bytes:
 
 # ユーザーがWiresharkからコピーしたと想定されるC-String
 # この文字列を実際のデータに置き換えてください
-packet_bytes = b"2\000\000\000x\23430\000\002\023#\023cc\006\026\206\340H\003\003\016\206\202\324\324\"\275\222\212\022C\003=\023\003=##\v=\v+C\v\vc.\000\317\367\t~"
+packet_bytes = b"5\000\000\000x\23430\000\002\023#\023c3\006\026\206\340H\003\003A\006g\253\230\362\314\274\202\324\324\242\230\314\002\275\222\212\022C\003=\023\003=CCC=C\000\005\235\v\276"
 
 # 2 ヘッダーを検証・削除
 compressed_data = packet_bytes[4:]
@@ -50,11 +50,12 @@ except zlib.error as e:
 except Exception as e:
     print(f"\n[エラー] 予期せぬエラーが発生しました: {e}")
 
-meta_data = "peer.txt10.40.228.8:1883\n"
-header_data = str(int("0000042501")+len(str(meta_data))).zfill(10)
+meta_data = "ip.txt10.40.111.1"
+header_data = str(int("0000042436")+len(str(meta_data))).zfill(10)
+# header_data = str(int("0000042436")).zfill(10)
 
 # print(str(original_data_bytes))
-original_data_bytes = header_data.encode('latin-1') + "\x00\x04\x00SY00\x08\x00".encode('latin-1') + meta_data.encode('latin-1')
+original_data_bytes = header_data.encode('latin-1') + "\x00\x04\x00SY00\x11\x00".encode('latin-1') + meta_data.encode('latin-1')
 print("uncode", original_data_bytes)
 
 # to_wireshark_style_escape関数を再利用
@@ -86,7 +87,7 @@ def to_wireshark_style_escape(data_bytes: bytes) -> str:
 compressed_payload = zlib.compress(original_data_bytes)
 
 # 2. ヘッダーを付与
-hedchr = chr(int(len(str(original_data_bytes[19:]))+21))
+hedchr = chr(int(len(str(original_data_bytes[19:]))+20))
 header = b'\x00\x00\x00'
 final_packet_bytes = hedchr.encode('latin-1') + header + compressed_payload
 
@@ -163,7 +164,7 @@ compare_strings_with_color(generated_string, wireshark_string,
 s = socket(AF_INET, SOCK_STREAM)
 s.settimeout(5)
 try:
-    s.connect(("10.40.251.14", 50598))
+    s.connect(("10.40.251.39", 50598))
     
     # ★★★ 修正箇所 ★★★
     # 整形後の文字列ではなく、元のバイト列 `final_packet_bytes` を送信する
