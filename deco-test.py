@@ -315,8 +315,8 @@ except Exception as e:
 
 # 任意のファイルパスでのテスト例
 print("\n--- カスタムパケットの生成例 ---")
-custom_path = "D:\\data\\test.txt"
-custom_packet, custom_original = create_packet(custom_path, "192.168.1.100")
+custom_path = "C:\\winpeer\\peer.txt"
+custom_packet, custom_original = create_packet(custom_path, "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
 try:
     decoded_custom = zlib.decompress(custom_packet[4:])
     print(f"カスタムパケット生成成功: {repr(decoded_custom)}")
