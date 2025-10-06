@@ -79,18 +79,15 @@ def extract_tcp_data_to_cstring(pcap_file, source_ip, destination_ip, source_por
     combined_data = b''.join(extracted_data)
     print(f"\n[+] 合計 {packet_count} 個のパケットから {len(combined_data)} バイトのデータを抽出しました。")
     
-    # C String形式に変換
-    c_string = to_c_string(combined_data)
-    
-    # ファイルに保存
+    # 各パケットを個別にC String形式で保存（改行区切り）
     try:
         with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(c_string)
-        print(f"[+] C String形式で '{output_file}' に保存しました。")
+            for i, data in enumerate(extracted_data, 1):
+                c_string = to_c_string(data)
+                f.write(c_string + '\n')
         
-        # 確認用に最初の100文字を表示
-        preview = c_string[:100] + ('...' if len(c_string) > 100 else '')
-        print(f"\n[Preview] {preview}")
+        print(f"[+] {packet_count} 個のパケットをC String形式で '{output_file}' に保存しました。")
+        print(f"    各パケットは改行で区切られています。")
         
     except Exception as e:
         print(f"[!] ファイル保存中にエラーが発生しました: {e}")
