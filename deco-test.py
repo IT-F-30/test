@@ -131,7 +131,7 @@ packet_ip, original_ip = create_packet("C:\\winpeer\\ip.txt", "10.40.111.111")
 packet_peer, original_peer = create_packet("peer.txt", "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
 
 # 使用例3: カスタムIPアドレスでip.txtパケットを生成
-packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\ip.txt", "10.40.241.126")
+packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\peer.txt", "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
 
 # 元のmeta_data変数も残す（後続のコードとの互換性のため）
 meta_data = "C:\\winpeer\\ip.txt10.40.241.126"
@@ -334,13 +334,13 @@ try:
     # 送信したいファイルとデータに応じて選択できます
     
     # 元のIPアドレスと一致するパケット
-    # s.send(p]acket_ip)  # ip.txt with 10.40.111.111
+    # s.send(packet_ip)  # ip.txt with 10.40.111.111
+
+    # 元のpeer.txtパケット
+    # s.send(packet_peer)  # peer.txt with tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1
     
     # カスタムIPアドレスのパケット
-    # s.send(packet_ip_custom)  # ip.txt with 10.40.241.126
-    
-    # peer.txt の場合
-    s.send(packet_peer)
+    s.send(packet_ip_custom)  # peer.txt with tcp://10.40.241.126
     
     print("\n正常にデータを送信しました。")
     print(f"送信したパケット: ip.txt ({len(packet_ip)} バイト)")
