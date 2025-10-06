@@ -131,7 +131,7 @@ packet_ip, original_ip = create_packet("C:\\winpeer\\ip.txt", "10.40.111.111")
 packet_peer, original_peer = create_packet("peer.txt", "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
 
 # 使用例3: カスタムIPアドレスでip.txtパケットを生成
-packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\peer.txt", "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
+packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\peer.txt", "tcp://10.40.241.126:1883,8959dc32e5536fd805df1034e99a77ce")
 
 # 元のmeta_data変数も残す（後続のコードとの互換性のため）
 meta_data = "C:\\winpeer\\ip.txt10.40.241.126"
