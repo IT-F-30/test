@@ -35,8 +35,13 @@ def from_wireshark_style_escape(c_string: str) -> bytes:
             
     return bytes(byte_array)
 
-# 10.40.111.1
-packet_bytes = b'5\000\000\000x\23430\000\002\023#\023c\v\006\026\206\340H\003\003A\006g\253\230\362\314\274\202\324\324\242\230\314\002\275\222\212\022C\003=\023\003=CCC\020\006\000\035\374\f\"'
+# ip.txt
+packet_bytes_iptxt = b'5\000\000\000x\23430\000\002\023#\023c\v\006\026\206\340H\003\003A\006g\253\230\362\314\274\202\324\324\242\230\314\002\275\222\212\022C\003=\023\003=CCC\020\006\000\035\374\f\"'
+
+# peer.txt
+packet_bytes_peer = b"R\000\000\000x\234\r\3011\016\200 \f\005P\006\a\017c\240\277-\332p\r'G$e&\206\301\343\353{D?e=\020\226p^Dk\030\356O\234\357\234m\224\224@Q)2[\264\0023\331v\264JM\345\356\214^\265\"k\026\222C\240\236\335\361\001\034\033\023\366"
+
+packet_bytes = b'5\000\000\000x\23430\000\002\023#\023c3\006\026\206\340H\003\003A\006g\253\230\362\314\274\202\324\324\242\230\314\002\275\222\212\022C\003=\023\003=CCC=C\000\005\235\v\276'
 
 # print(f"パケット111の長さ: 全体={len(packet_bytes_111)}, 圧縮データ={len(packet_bytes_111[4:])}, 最初のバイト={packet_bytes_111[0]}")
 print(f"パケット1の長さ: 全体={len(packet_bytes)}, 圧縮データ={len(packet_bytes[4:])}, 最初のバイト={packet_bytes[0]}")
@@ -54,14 +59,86 @@ except zlib.error as e:
 except Exception as e:
     print(f"\n[エラー] 予期せぬエラーが発生しました: {e}")
 
-meta_data = "C:\\winpeer\\ip.txt10.40.111.111"
-# ヘッダー数値の計算: 42389 + デコード後の全体長
-# デコード後の全体長 = 10(ヘッダー) + 9(固定部分) + len(meta_data)
+def create_packet(file_path, ip_or_data):
+    """
+    ファイルパスとIPアドレス(またはその他のデータ)からパケットを生成する
+    
+    【パケット構造の説明】
+    圧縮前のデータ構造:
+      - バイト 0-9:   ヘッダー数値 (10桁の文字列、42389 + データ全体長)
+      - バイト 10-18: 固定部分
+        * バイト 10-12: \x00\x04\x00
+        * バイト 13-16: "SY00" (固定文字列)
+        * バイト 17:    ファイルパスの長さ (★重要★ここが自動調整されます)
+        * バイト 18:    \x00
+      - バイト 19-:   メタデータ (ファイルパス + IPアドレスなど)
+    
+    圧縮後のパケット構造:
+      - バイト 0:     圧縮データの長さ
+      - バイト 1-3:   \x00\x00\x00 (固定ヘッダー)
+      - バイト 4-:    zlib圧縮されたデータ
+    
+    Args:
+        file_path: ファイルのフルパス (例: "C:\\winpeer\\ip.txt" または "peer.txt")
+        ip_or_data: IPアドレスやその他のデータ (例: "10.40.241.126" または "tcp://10.40.228.8:1883,...")
+    
+    Returns:
+        tuple: (生成されたパケット(バイト列), 圧縮前の元データ(バイト列))
+    
+    使用例:
+        # ip.txtの場合
+        packet, original = create_packet("C:\\winpeer\\ip.txt", "10.40.241.126")
+        
+        # peer.txtの場合
+        packet, original = create_packet("peer.txt", "tcp://10.40.228.8:1883,...")
+        
+        # 任意のファイルパスの場合
+        packet, original = create_packet("D:\\data\\config.txt", "192.168.1.1")
+    """
+    # メタデータ部分を結合
+    meta_data = file_path + ip_or_data
+    
+    # ファイルパスの長さを計算 (バイト17に設定する値)
+    file_path_length = len(file_path.encode('latin-1'))
+    
+    # ヘッダー数値の計算: 42389 + デコード後の全体長
+    # デコード後の全体長 = 10(ヘッダー) + 9(固定部分) + len(meta_data)
+    decoded_length = 10 + 9 + len(meta_data.encode('latin-1'))
+    header_data = str(42389 + decoded_length).zfill(10)
+    
+    # 固定部分を構築 (バイト17にファイルパスの長さを設定)
+    # フォーマット: \x00\x04\x00SY00[ファイルパス長]\x00
+    fixed_part = b'\x00\x04\x00SY00' + bytes([file_path_length]) + b'\x00'
+    
+    # 元データを構築
+    original_data_bytes = header_data.encode('latin-1') + fixed_part + meta_data.encode('latin-1')
+    
+    # zlibで圧縮
+    compressed_payload = zlib.compress(original_data_bytes)
+    
+    # ヘッダーを付与
+    hedchr = chr(len(compressed_payload))
+    header = b'\x00\x00\x00'
+    final_packet_bytes = hedchr.encode('latin-1') + header + compressed_payload
+    
+    return final_packet_bytes, original_data_bytes
+
+
+# 使用例1: ip.txt のパケットを生成 (元のパケットと同じIPアドレスを使用)
+packet_ip, original_ip = create_packet("C:\\winpeer\\ip.txt", "10.40.111.111")
+
+# 使用例2: peer.txt のパケットを生成
+packet_peer, original_peer = create_packet("peer.txt", "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
+
+# 使用例3: カスタムIPアドレスでip.txtパケットを生成
+packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\ip.txt", "10.40.241.126")
+
+# 元のmeta_data変数も残す（後続のコードとの互換性のため）
+meta_data = "C:\\winpeer\\ip.txt10.40.241.126"
 decoded_length = 10 + 9 + len(meta_data)
 header_data = str(42389 + decoded_length).zfill(10)
-
-# print(str(original_data_bytes))
-original_data_bytes = header_data.encode('latin-1') + "\x00\x04\x00SY00\x11\x00".encode('latin-1') + meta_data.encode('latin-1')
+file_path_length = len("C:\\winpeer\\ip.txt".encode('latin-1'))
+original_data_bytes = header_data.encode('latin-1') + b'\x00\x04\x00SY00' + bytes([file_path_length]) + b'\x00' + meta_data.encode('latin-1')
 print("uncode", original_data_bytes)
 
 # to_wireshark_style_escape関数を再利用
@@ -189,19 +266,86 @@ except Exception as e:
     print(f"デコードエラー: {e}")
 
 
+# ===== 新しい関数で生成したパケットを検証 =====
+print("\n" + "="*60)
+print("新しいcreate_packet関数で生成したパケットの検証")
+print("="*60)
 
-# s = socket(AF_INET, SOCK_STREAM)
-# s.settimeout(5)
-# try:
-#     s.connect(("10.40.251.39", 50598))
+# ip.txt パケットの検証
+print("\n--- ip.txt パケットの検証 ---")
+print(f"生成されたパケット長: {len(packet_ip)} バイト")
+print(f"元のパケット長: {len(packet_bytes_iptxt)} バイト")
+
+try:
+    decoded_ip = zlib.decompress(packet_ip[4:])
+    print(f"デコード成功: {repr(decoded_ip)}")
+    print(f"ファイルパス長バイト(バイト17): 0x{decoded_ip[17]:02x} ({decoded_ip[17]})")
     
-#     # ★★★ 修正箇所 ★★★
-#     # 整形後の文字列ではなく、元のバイト列 `final_packet_bytes` を送信する
-#     s.send(final_packet_bytes)
+    expected_path = "C:\\winpeer\\ip.txt"
+    print(f"実際のファイルパス: '{expected_path}' = {len(expected_path)} バイト")
+    
+    # 元のパケットと比較
+    decoded_original_ip = zlib.decompress(packet_bytes_iptxt[4:])
+    if decoded_ip == decoded_original_ip:
+        print("✓ 元のip.txtパケットと完全に一致！")
+    else:
+        print(f"✗ 差異あり: 生成={len(decoded_ip)}バイト, 元={len(decoded_original_ip)}バイト")
+except Exception as e:
+    print(f"✗ エラー: {e}")
 
-#     print("\n正常にデータを送信しました。")
-#     s.close()
-# except timeout:
-#     print("接続がタイムアウトしました。")
-# except Exception as e:
-#     print(f"エラーが発生しました: {e}")
+# peer.txt パケットの検証
+print("\n--- peer.txt パケットの検証 ---")
+print(f"生成されたパケット長: {len(packet_peer)} バイト")
+print(f"元のパケット長: {len(packet_bytes_peer)} バイト")
+
+try:
+    decoded_peer = zlib.decompress(packet_peer[4:])
+    print(f"デコード成功: {repr(decoded_peer)}")
+    print(f"ファイルパス長バイト(バイト17): 0x{decoded_peer[17]:02x} ({decoded_peer[17]})")
+    print(f"実際のファイルパス: 'peer.txt' = {len('peer.txt')} バイト")
+    
+    # 元のパケットと比較
+    decoded_original_peer = zlib.decompress(packet_bytes_peer[4:])
+    if decoded_peer == decoded_original_peer:
+        print("✓ 元のpeer.txtパケットと完全に一致！")
+    else:
+        print(f"✗ 差異あり: 生成={len(decoded_peer)}バイト, 元={len(decoded_original_peer)}バイト")
+except Exception as e:
+    print(f"✗ エラー: {e}")
+
+# 任意のファイルパスでのテスト例
+print("\n--- カスタムパケットの生成例 ---")
+custom_path = "D:\\data\\test.txt"
+custom_packet, custom_original = create_packet(custom_path, "192.168.1.100")
+try:
+    decoded_custom = zlib.decompress(custom_packet[4:])
+    print(f"カスタムパケット生成成功: {repr(decoded_custom)}")
+    print(f"ファイルパス長: {decoded_custom[17]} バイト (期待値: {len(custom_path)})")
+except Exception as e:
+    print(f"エラー: {e}")
+
+
+s = socket(AF_INET, SOCK_STREAM)
+s.settimeout(5)
+try:
+    s.connect(("10.40.251.43", 50598))
+    
+    # 新しい関数で生成したパケットを送信
+    # 送信したいファイルとデータに応じて選択できます
+    
+    # 元のIPアドレスと一致するパケット
+    # s.send(p]acket_ip)  # ip.txt with 10.40.111.111
+    
+    # カスタムIPアドレスのパケット
+    # s.send(packet_ip_custom)  # ip.txt with 10.40.241.126
+    
+    # peer.txt の場合
+    s.send(packet_peer)
+    
+    print("\n正常にデータを送信しました。")
+    print(f"送信したパケット: ip.txt ({len(packet_ip)} バイト)")
+    s.close()
+except timeout:
+    print("接続がタイムアウトしました。")
+except Exception as e:
+    print(f"エラーが発生しました: {e}")

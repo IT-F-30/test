@@ -1,5 +1,6 @@
 from socket import socket, AF_INET, SOCK_STREAM, timeout
 import re
+import time
 
 # Function to parse the sendpacketmetadata.txt file and extract peer data
 def parse_peer_data(file_path):
@@ -15,24 +16,55 @@ def parse_peer_data(file_path):
             peer_data[peer_name] = bytes(int(byte, 16) for byte in byte_values)
     return peer_data
 
+# Function to send data with retry mechanism
+def send_data_with_retry(peer_name, data, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            s = socket(AF_INET, SOCK_STREAM)
+            s.settimeout(10)  # タイムアウトを10秒に延長
+            s.connect(("10.40.251.43", 50598))
+            
+            # Send the data for the current peer
+            s.send(data)
+            s.close()
+            
+            print(f"正常にデータを送信しました: {peer_name}")
+            return True
+        except timeout:
+            if attempt < max_retries - 1:
+                print(f"タイムアウト - リトライ中 ({attempt + 1}/{max_retries}): {peer_name}")
+                time.sleep(1)  # リトライ前に1秒待機
+            else:
+                print(f"接続がタイムアウトしました: {peer_name}")
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"エラー - リトライ中 ({attempt + 1}/{max_retries}): {peer_name} - {e}")
+                time.sleep(1)
+            else:
+                print(f"エラーが発生しました ({peer_name}): {e}")
+        finally:
+            try:
+                s.close()
+            except:
+                pass
+    return False
+
 # Extract peer data from sendpacketmetadata.txt
 peer_data = parse_peer_data("sendpacketmetadata.txt")
 
 # Iterate through peer0_0 to peer0_100 and send their data
-for i in range(101):
+success_count = 0
+fail_count = 0
+
+for i in range(102):
     peer_name = f"peer0_{i}"
     if peer_name in peer_data:
-        try:
-            s = socket(AF_INET, SOCK_STREAM)
-            s.settimeout(5)
-            s.connect(("10.40.251.39", 50598))
+        if send_data_with_retry(peer_name, peer_data[peer_name]):
+            success_count += 1
+        else:
+            fail_count += 1
+        
+        # 送信間隔に小さな遅延を追加（サーバー負荷軽減）
+        time.sleep(0.1)
 
-            # Send the data for the current peer
-            s.send(peer_data[peer_name])
-
-            print(f"正常にデータを送信しました: {peer_name}")
-            s.close()
-        except timeout:
-            print(f"接続がタイムアウトしました: {peer_name}")
-        except Exception as e:
-            print(f"エラーが発生しました ({peer_name}): {e}")
+print(f"\n送信完了: 成功={success_count}, 失敗={fail_count}")
