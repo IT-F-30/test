@@ -61,7 +61,7 @@ def display_packet_info(packets):
             print(f"  Data (hex): {bytes(tcp_layer.payload).hex()[:100]}...")
         print()
 
-def reproduce_tcp_transmission(packets, target_ip=None, dry_run=True):
+def reproduce_tcp_transmission(packets, target_ip="10.40.251.43", dry_run=True):
     """
     TCPパケットの送信を再現
     
@@ -78,6 +78,9 @@ def reproduce_tcp_transmission(packets, target_ip=None, dry_run=True):
     
     print("\n[+] パケット送信を開始します...")
     
+    success_count = 0
+    error_count = 0
+    
     for i, pkt in enumerate(packets, 1):
         try:
             # 新しいパケットを構築
@@ -93,15 +96,19 @@ def reproduce_tcp_transmission(packets, target_ip=None, dry_run=True):
                 new_pkt = new_pkt / bytes(pkt[TCP].payload)
             
             print(f"[{i}/{len(packets)}] パケット送信中...")
-            send(new_pkt, verbose=False)
+            
+            # fragmentオプションを有効にして送信 (OSにフラグメント化を任せる)
+            send(new_pkt, verbose=False, fragment=True)
+            success_count += 1
             
             # 次のパケットまで少し待機
             time.sleep(0.01)
             
         except Exception as e:
             print(f"[!] エラー: パケット {i} の送信に失敗しました: {e}")
+            error_count += 1
     
-    print("[+] 送信完了")
+    print(f"\n[+] 送信完了: 成功 {success_count}/{len(packets)}, 失敗 {error_count}/{len(packets)}")
 
 def main():
     pcap_file = "winpeer.pcapng"
@@ -118,7 +125,7 @@ def main():
         display_packet_info(filtered_packets)
         
         # パケット送信の再現 (デフォルトはドライラン)
-        reproduce_tcp_transmission(filtered_packets, dry_run=True)
+        reproduce_tcp_transmission(filtered_packets, dry_run=False)
         
         print("\n[i] 実際にパケットを送信する場合:")
         print("    1. dry_run=False に変更してください")
