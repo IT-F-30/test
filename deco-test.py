@@ -131,7 +131,7 @@ packet_ip, original_ip = create_packet("C:\\winpeer\\ip.txt", "10.40.111.111")
 packet_peer, original_peer = create_packet("peer.txt", "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
 
 # 使用例3: カスタムIPアドレスでip.txtパケットを生成
-packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\peer.txt", "tcp://10.40.241.126:1883,8959dc32e5536fd805df1034e99a77ce")
+packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\peer.txt", "tcp://10.40.236.143:1883,2b8fb868b4aa628a778fe7760a362ee7")
 
 # 元のmeta_data変数も残す（後続のコードとの互換性のため）
 meta_data = "C:\\winpeer\\ip.txt10.40.241.126"
@@ -328,7 +328,7 @@ except Exception as e:
 s = socket(AF_INET, SOCK_STREAM)
 s.settimeout(5)
 try:
-    s.connect(("10.40.251.43", 50598))
+    s.connect(("10.40.251.14", 50598))
     
     # 新しい関数で生成したパケットを送信
     # 送信したいファイルとデータに応じて選択できます
