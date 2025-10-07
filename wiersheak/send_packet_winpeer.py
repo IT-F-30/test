@@ -166,7 +166,7 @@ def main():
         display_packet_info(packets)
         
         # データを送信
-        send_tcp_data(packets, target_ip="10.40.251.43", dry_run=False)
+        send_tcp_data(packets, target_ip="10.40.249.136", dry_run=False)
         
         print("\n[i] 設定オプション:")
         print("    - tcp_data.json: TCPデータを含むJSONファイル")

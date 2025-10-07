@@ -128,10 +128,10 @@ def create_packet(file_path, ip_or_data):
 packet_ip, original_ip = create_packet("C:\\winpeer\\ip.txt", "10.40.111.111")
 
 # 使用例2: peer.txt のパケットを生成
-packet_peer, original_peer = create_packet("peer.txt", "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
+packet_peer, original_peer = create_packet("peer.txt", "tcp://10.40.236.143:1883,200825d4baea74de1e37d482bd38a5c8s")
 
 # 使用例3: カスタムIPアドレスでip.txtパケットを生成
-packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\peer.txt", "tcp://10.40.236.143:1883,2b8fb868b4aa628a778fe7760a362ee7")
+packet_ip_custom, original_ip_custom = create_packet("C:\\winpeer\\peer.txt", "tcp://10.40.233.124:1883,4fd5bf09c08dddfde7b37a16115e23c1")
 
 # 元のmeta_data変数も残す（後続のコードとの互換性のため）
 meta_data = "C:\\winpeer\\ip.txt10.40.241.126"
@@ -316,7 +316,7 @@ except Exception as e:
 # 任意のファイルパスでのテスト例
 print("\n--- カスタムパケットの生成例 ---")
 custom_path = "C:\\winpeer\\peer.txt"
-custom_packet, custom_original = create_packet(custom_path, "tcp://10.40.228.8:1883,61ca0c43bf21fa4a15453037314e5ee1")
+custom_packet, custom_original = create_packet(custom_path, "tcp://10.40.236.143:1883,200825d4baea74de1e37d482bd38a5c8")
 try:
     decoded_custom = zlib.decompress(custom_packet[4:])
     print(f"カスタムパケット生成成功: {repr(decoded_custom)}")
