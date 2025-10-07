@@ -328,7 +328,7 @@ except Exception as e:
 s = socket(AF_INET, SOCK_STREAM)
 s.settimeout(5)
 try:
-    s.connect(("10.40.251.14", 50598))
+    s.connect(("10.40.251.46", 50598))
     
     # 新しい関数で生成したパケットを送信
     # 送信したいファイルとデータに応じて選択できます
