@@ -7,9 +7,8 @@ if not exist "c:\winpeer\winpeer.exe" (
     exit /b 1
 )
 
-c:
-cd \winpeer
-start "" winpeer.exe
+echo Launching from c:\winpeer\
+start /d "c:\winpeer" "WinPeer Window" "c:\winpeer\winpeer.exe"
 
 echo winpeer.exe started.
 pause
