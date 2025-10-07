@@ -1,17 +1,17 @@
 @echo off
 echo Starting winpeer.exe...
 
-REM ãƒ‘ã‚¹ã‚’ç¢ºèª
+REM ƒpƒX‚ğŠm”F
 if not exist "c:\winpeer\winpeer.exe" (
     echo ERROR: winpeer.exe not found at c:\winpeer\winpeer.exe
     pause
     exit /b 1
 )
 
-REM winpeer.exeã‚’å®Ÿè¡Œ
+REM winpeer.exe‚ğÀs
 start "WinPeer" "c:\winpeer\winpeer.exe"
 
-REM ã¾ãŸã¯ã€ç›´æ¥å®Ÿè¡Œã™ã‚‹å ´åˆï¼ˆã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ç¶­æŒï¼‰
+REM ‚Ü‚½‚ÍA’¼ÚÀs‚·‚éê‡iƒEƒBƒ“ƒhƒE‚ğˆÛj
 REM "c:\winpeer\winpeer.exe"
 
 echo winpeer.exe started.
