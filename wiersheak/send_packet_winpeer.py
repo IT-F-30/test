@@ -78,7 +78,7 @@ def main():
         data = load_tcp_data(json_file)
         
         # データを送信
-        send_tcp_data(data, target_ip="10.40.251.18")
+        send_tcp_data(data, target_ip="10.40.251.14")
                 
     except FileNotFoundError:
         print(f"[!] エラー: {json_file} が見つかりません")
