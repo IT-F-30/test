@@ -1,22 +1,11 @@
 #!/usr/bin/env python3
 """
-tcp_data.jsonからTCPデータを読み込んで送信するスクリプト
+tcp_data.jsonからTCPデータを読み込んで送信するスクリプト（最適化版）
 """
 
 import time
 import socket
 import json
-import sys
-
-#!/usr/bin/env python3
-"""
-tcp_data.jsonからTCPデータを読み込んで送信するスクリプト
-"""
-
-import time
-import socket
-import json
-import sys
 
 def load_tcp_data(json_file="tcp_data.json"):
     """
@@ -29,43 +18,17 @@ def load_tcp_data(json_file="tcp_data.json"):
     
     print(f"[+] 総パケット数: {data['total_packets']}")
     print(f"[+] 総データ量: {data['total_bytes']} bytes")
+    print(f"[+] ポート情報: {data['ports']['src_port']} -> {data['ports']['dst_port']}")
     
-    return data['packets']
+    return data
 
-def display_packet_info(packets):
-    """
-    パケット情報を表示（データ部分のみ）
-    """
-    print("\n[+] パケット情報（データのみ）:")
-    print("-" * 80)
-    for pkt in packets[:10]:  # 最初の10パケットのみ表示
-        print(f"パケット {pkt['packet_id']}:")
-        print(f"  {pkt['src_ip']}:{pkt['src_port']} -> {pkt['dst_ip']}:{pkt['dst_port']}")
-        print(f"  Payload: {pkt['data_length']} bytes")
-        
-        # HEX表示
-        hex_data = pkt['data_hex'][:100]
-        print(f"  Data (hex): {hex_data}...")
-        
-        # ASCII表示
-        try:
-            data_bytes = bytes.fromhex(pkt['data_hex'])
-            ascii_preview = ''.join(chr(b) if 32 <= b < 127 else '.' for b in data_bytes[:50])
-            print(f"  Data (ASCII): {ascii_preview}")
-        except:
-            pass
-        print()
-    
-    if len(packets) > 10:
-        print(f"... 他 {len(packets) - 10} パケット")
-        print()
 
-def send_tcp_data(packets, target_ip="10.40.251.43", dry_run=False):
+def send_tcp_data(data, target_ip="10.40.251.43", dry_run=False):
     """
     TCPデータを送信
     
     Args:
-        packets: 送信するパケットデータのリスト
+        data: JSONから読み込んだデータ（ポート情報とpayloads）
         target_ip: 宛先IPアドレス
         dry_run: Trueの場合は実際には送信しない
     """
@@ -74,19 +37,16 @@ def send_tcp_data(packets, target_ip="10.40.251.43", dry_run=False):
         print("[!] 実際に送信する場合は、dry_run=False に設定してください")
         return
     
-    if not packets:
+    ports = data['ports']
+    payloads = data['payloads']
+    
+    if not payloads:
         print("[!] 送信するパケットがありません")
         return
     
     print("\n[+] TCP通信でデータ送信を開始します...")
-    
-    # 最初のパケットからポート番号を取得
-    first_pkt = packets[0]
-    src_port = first_pkt['src_port']
-    dst_port = first_pkt['dst_port']
-    
-    print(f"[i] 接続先: {target_ip}:{dst_port}")
-    print(f"[i] 送信元ポート: {src_port}")
+    print(f"[i] 接続先: {target_ip}:{ports['dst_port']}")
+    print(f"[i] 送信元ポート: {ports['src_port']}")
     
     total_data_bytes = 0
     success_count = 0
@@ -97,28 +57,28 @@ def send_tcp_data(packets, target_ip="10.40.251.43", dry_run=False):
         
         # 送信元ポートを指定してバインド（オプション）
         try:
-            sock.bind(('', src_port))
-            print(f"[+] 送信元ポート {src_port} にバインドしました")
+            sock.bind(('', ports['src_port']))
+            print(f"[+] 送信元ポート {ports['src_port']} にバインドしました")
         except OSError as e:
-            print(f"[!] 警告: ポート {src_port} のバインドに失敗: {e}")
+            print(f"[!] 警告: ポート {ports['src_port']} のバインドに失敗: {e}")
             print(f"[i] OSが自動的にポートを割り当てます")
         
         # タイムアウトを設定
         sock.settimeout(10)
         
         # 接続を確立
-        print(f"[+] {target_ip}:{dst_port} に接続中...")
-        sock.connect((target_ip, dst_port))
+        print(f"[+] {target_ip}:{ports['dst_port']} に接続中...")
+        sock.connect((target_ip, ports['dst_port']))
         print("[+] TCP接続が確立されました\n")
         
         # 各パケットのデータを送信
-        for pkt in packets:
+        for idx, payload_hex in enumerate(payloads, 1):
             # HEX文字列からバイナリデータに変換
-            payload_data = bytes.fromhex(pkt['data_hex'])
+            payload_data = bytes.fromhex(payload_hex)
             data_len = len(payload_data)
             total_data_bytes += data_len
             
-            print(f"[{pkt['packet_id']}/{len(packets)}] データ送信中 ({data_len} bytes)...")
+            print(f"[{idx}/{len(payloads)}] データ送信中 ({data_len} bytes)...")
             
             # データを送信
             sent = sock.send(payload_data)
@@ -132,7 +92,7 @@ def send_tcp_data(packets, target_ip="10.40.251.43", dry_run=False):
             # 少し待機
             time.sleep(0.01)
         
-        print(f"\n[+] 送信完了: {success_count}/{len(packets)} パケット")
+        print(f"\n[+] 送信完了: {success_count}/{len(payloads)} パケット")
         print(f"[i] 送信した総データ量: {total_data_bytes} bytes")
         
         # 接続を閉じる
@@ -143,9 +103,7 @@ def send_tcp_data(packets, target_ip="10.40.251.43", dry_run=False):
     except socket.timeout:
         print("[!] エラー: 接続タイムアウト")
     except ConnectionRefusedError:
-        print(f"[!] エラー: 接続が拒否されました。{target_ip}:{dst_port} が利用可能か確認してください")
-    except FileNotFoundError:
-        print(f"[!] エラー: データファイルが見つかりません")
+        print(f"[!] エラー: 接続が拒否されました。{target_ip}:{ports['dst_port']} が利用可能か確認してください")
     except Exception as e:
         print(f"[!] エラー: {e}")
         import traceback
@@ -156,17 +114,10 @@ def main():
     
     try:
         # JSONファイルからデータを読み込み
-        packets = load_tcp_data(json_file)
-        
-        if not packets:
-            print("[!] データが見つかりませんでした")
-            return
-        
-        # パケット情報を表示
-        display_packet_info(packets)
+        data = load_tcp_data(json_file)
         
         # データを送信
-        send_tcp_data(packets, target_ip="10.40.249.136", dry_run=False)
+        send_tcp_data(data, target_ip="10.40.251.18", dry_run=False)
         
         print("\n[i] 設定オプション:")
         print("    - tcp_data.json: TCPデータを含むJSONファイル")
