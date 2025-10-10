@@ -9,6 +9,7 @@ if not exist "c:\winpeer\winpeer.exe" (
 
 echo Launching from c:\winpeer\
 cd /d "c:\winpeer"
-winpeer.exe tcp://10.40.241.126:1883 8959dc32e5536fd805df1034e99a77ce
+Unblock-File -Path "c:\winpeer\winpeer.exe"
+start "" "c:\winpeer\winpeer.exe"
 echo Exit code: %ERRORLEVEL%
 pause
